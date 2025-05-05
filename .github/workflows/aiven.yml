@@ -30,11 +30,15 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Check venv content
+        run: ls -la .venv
+
       - name: Upload venv as artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-venv
           path: .venv
+          include-hidden-files: true
 
   mysql-check:
     needs: setup
