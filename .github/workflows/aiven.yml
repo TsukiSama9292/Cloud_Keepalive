@@ -1,0 +1,114 @@
+name: Aiven Keepalive Checks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 16 * * *' 
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      venv-path: ${{ steps.set-path.outputs.venv-path }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set virtualenv path
+        id: set-path
+        run: echo "venv-path=.venv" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies into venv
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Upload venv as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-venv
+          path: .venv
+
+  mysql-check:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download venv artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: python-venv
+          path: .venv
+
+      - name: Run MySQL Keepalive
+        run: |
+          source .venv/bin/activate
+          python3 mysql_keepalive.py \
+            --db "${{ secrets.AIVEN_MYSQL_DB }}" \
+            --host "${{ secrets.AIVEN_MYSQL_HOST }}" \
+            --port "${{ secrets.AIVEN_MYSQL_PORT }}" \
+            --user "${{ secrets.AIVEN_MYSQL_USER }}" \
+            --password "${{ secrets.AIVEN_MYSQL_PASSWORD }}"
+
+  postgresql-check:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download venv artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: python-venv
+          path: .venv
+
+      - name: Run PostgreSQL Keepalive
+        run: |
+          source .venv/bin/activate
+          python3 postgresql_keepalive.py \
+            --db "${{ secrets.AIVEN_POSTGRESQL_DB }}" \
+            --host "${{ secrets.AIVEN_POSTGRESQL_HOST }}" \
+            --port "${{ secrets.AIVEN_POSTGRESQL_PORT }}" \
+            --user "${{ secrets.AIVEN_POSTGRESQL_USER }}" \
+            --password "${{ secrets.AIVEN_POSTGRESQL_PASSWORD }}"
+
+  valkey-check:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Download venv artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: python-venv
+          path: .venv
+
+      - name: Run Valkey Keepalive
+        run: |
+          source .venv/bin/activate
+          python3 valkey_keepalive.py \
+            --host "${{ secrets.AIVEN_VALKEY_HOST }}" \
+            --port "${{ secrets.AIVEN_VALKEY_PORT }}" \
+            --user "${{ secrets.AIVEN_VALKEY_USER }}" \
+            --password "${{ secrets.AIVEN_VALKEY_PASSWORD }}"

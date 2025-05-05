@@ -1,0 +1,5 @@
+pymysql
+cryptography
+psycopg2-binary
+valkey
+valkey[hiredis]
